@@ -14,10 +14,11 @@ library(ggplot2)
 library(kableExtra)
 library(rmarkdown)
 library(markdown)
-library(parcats) #
 library(xtable) # exporta tablas en latex o html
 library(lubridate) # manejador de fechas
-rm(list = ls())
+library(plotly) 
+
+rm(list = ls()) # elimina los objetos creados en la memoria
 
 #Fijamos nuestro directorio de trabajo
 
@@ -120,7 +121,7 @@ sapply(DATAFINAL,class)
 
 #Cambiamos el nombre de la columna 3
 
-names(DATAFINAL)[3]="mes"
+names(DATAFINAL)[3]="Mes"
 
 #Generamos una lista que no deseamos tener en nuestra base de datos
 
@@ -142,19 +143,15 @@ unique(DATAFINAL$Año)
 DATAFINAL$Año<-sapply(DATAFINAL$Año, function(x) as.numeric(as.character(x)))
 DATAFINAL$Mes<-sapply(DATAFINAL$Mes, function(y) as.numeric(as.integer(y)))
 
-#Para una mejor visualización le ponemos los nombres de los meses
-#Creamos una variable llamado Mes
-DATAFINAL$Mes<-"mes"
-DATAFINAL$Mes<-DATAFINAL$Mes%>%
-  
-Meses<-c("Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio",
-         "Agosto","septiembre","Octubre","Noviembre","Diciembre")
-
-DATAFINAL<-DATAFINAL%>%
-  mutate(Mes=replace(Mes, Mes %in% c(1:12), Meses))
 
 sapply(DATAFINAL,class)
-sum(is.na(DATAFINAL$Inversión))
+
+#Eliminamos los NAs
+
+DATAFINAL<-DATAFINAL[complete.cases(DATAFINAL),]
+
+#Convertimos en millones de dolares
+DATAFINAL$Inversión<-round(DATAFINAL$Inversión/1000000,3)
 
 #CREAMOS TABLAS POR GRUPO
 
@@ -163,5 +160,99 @@ INV_DEPA<-DATAFINAL%>%
   summarise(Total=sum(Inversión))%>%
   arrange(Año)
 
-INV_DEPA<-INV_DEPA%>%
-  filter(!Total=="NA")
+#Volverlo en horizontal
+INV_DEPAH<-INV_DEPA%>%
+  pivot_wider(names_prefix="Departamento", names_from = Año,values_from=Total)
+names(INV_DEPAH)[2:21]<-c(2000:2019)
+
+INV_DYRubro<-DATAFINAL%>%
+  group_by(Departamento,Año,Rubro)%>%
+  summarise(Total=sum(Inversión))%>%
+  arrange(Año)
+
+#Filtramos por Rubro
+R1<-INV_DYRubro%>%
+  filter(Rubro=="Desarrollo y preparación")
+
+R2<-INV_DYRubro%>%
+  filter(Rubro=="Equipamiento Minero")
+
+R3<-INV_DYRubro%>%
+  filter(Rubro=="Exploración")
+
+R4<-INV_DYRubro%>%
+  filter(Rubro=="Infraestructura")
+
+R5<-INV_DYRubro%>%
+  filter(Rubro=="Planta de beneficio")
+
+R6<-INV_DYRubro%>%
+  filter(Rubro=="Otros")
+
+#creamos gráficos
+
+#Grafico general
+
+ggplot(INV_DEPA, aes(x=Año, y=Total))+
+  geom_line(aes(color=Departamento), size=1)+
+  theme_minimal()+
+  labs(title = "Inversión minera en el Peru por Departamenos",
+       subtitle = "En millones de dolares",
+       caption = "Fuente: MINEM")
+ggplotly()
+
+#Graficos por rubros
+#1)
+ggplot(R1, aes(x=Año,y=Total))+
+  geom_line(aes(color=Departamento), size=1)+
+  theme_minimal()+
+  labs(title = "Inversión minera en Desarrollo y preparación por Departamenos",
+       subtitle = "En millones de dolares",
+       caption = "Fuente: MINEM")
+ggplotly()
+
+#2)
+ggplot(R2, aes(x=Año,y=Total))+
+  geom_line(aes(color=Departamento), size=1)+
+  theme_minimal()+
+  labs(title = "Inversión minera en Equipamiento Minero por Departamenos",
+       subtitle = "En millones de dolares",
+       caption = "Fuente: MINEM")
+ggplotly()
+#3)
+ggplot(R3, aes(x=Año,y=Total))+
+  geom_line(aes(color=Departamento), size=1)+
+  theme_minimal()+
+  labs(title = "Inversión minera en Exploración por Departamenos",
+       subtitle = "En millones de dolares",
+       caption = "Fuente: MINEM")
+ggplotly()
+#4)
+
+ggplot(R4, aes(x=Año,y=Total))+
+  geom_line(aes(color=Departamento), size=1)+
+  theme_minimal()+
+  labs(title = "Inversión minera en Infraestructura por Departamenos",
+       subtitle = "En millones de dolares",
+       caption = "Fuente: MINEM")
+ggplotly()
+#5)
+
+ggplot(R5, aes(x=Año,y=Total))+
+  geom_line(aes(color=Departamento), size=1)+
+  theme_minimal()+
+  labs(title = "Inversión minera en Planta de beneficio por Departamenos",
+       subtitle = "En millones de dolares",
+       caption = "Fuente: MINEM")
+ggplotly()
+#6)
+
+ggplot(R6, aes(x=Año,y=Total))+
+  geom_line(aes(color=Departamento), size=1)+
+  theme_minimal()+
+  labs(title = "Inversión minera Otros por Departamenos",
+       subtitle = "En millones de dolares",
+       caption = "Fuente: MINEM")
+ggplotly()
+
+#FINAL
